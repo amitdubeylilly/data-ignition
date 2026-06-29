@@ -10,7 +10,7 @@ The original `medal_report.py` had six defects, but two critical correctness bug
 
 I also removed a hardcoded API token, an `os.system()` call, and reset the chart y-axis to zero (truncated baseline exaggerated differences).
 
-**Verification:** A reconciliation table shows row counts at every stage (19,326 → 19,161 → 8,710 final event medals). 71 tests with 100% branch coverage confirm correctness.
+**Verification:** Reconciliation table shows counts at every stage (19,326 → 19,161 → 8,710 final event medals). 71 tests with 100% branch coverage confirm correctness. Run `python analysis.py` to reproduce all Phase 2 numbers.
 
 ## Data Decisions
 
@@ -22,8 +22,8 @@ I also removed a hardcoded API token, an `os.system()` call, and reset the chart
 
 ## Your Finding
 
-**Insight:** The counting bug is structurally correlated (Pearson r = 0.950, n = 30 countries) with each country's team-sport concentration. Nations emphasizing team events are systematically over-ranked; individual-sport nations are suppressed. Specific rank changes after fix: KEN 23→18 (+5), KOR 12→8 (+4), BRA 8→11 (−3), GRC 19→23 (−4).
+**Insight:** The counting bug is structurally correlated (Pearson r = 0.9505, n = 30) with each country's team-sport concentration. Nations emphasizing team events are systematically over-ranked; individual-sport nations are suppressed. Rank changes after fix: KEN 23→18 (+5), KOR 12→8 (+4), BRA 8→11 (−3), GRC 19→23 (−4).
 
-**Why defensible:** The correlation holds per-decade (1960–79: r = 0.978 n = 24; 1980–99: r = 0.910 n = 29; 2000–16: r = 0.954 n = 25), survives alternative metrics (weighted points produce identical top-8), and when team events are removed, all inflation ratios converge to ~1.0 (mean 0.971, max 1.000) — confirming team-row multiplication as the sole cause.
+**Why defensible:** Correlation holds per-decade (1960–79: r = 0.9778; 1980–99: r = 0.9101; 2000–16: r = 0.9544), survives alternative metrics (weighted points produce identical top-8), and when team events are removed, inflation ratios converge to ~1.0 (mean 0.9710, max 1.0000) — confirming team-row multiplication as sole cause.
 
 **Caveats:** The dataset is synthetic (generated names, 20 generic events), so rankings reflect data-generation patterns, not real Olympic outcomes. Population reference lacks a stated year, limiting per-capita comparability.
