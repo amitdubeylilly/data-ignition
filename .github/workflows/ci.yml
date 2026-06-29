@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Lint (ruff check)
+        run: ruff check medal_report.py analysis.py tests/
+
+      - name: Format check (ruff format)
+        run: ruff format --check medal_report.py analysis.py tests/
+
+      - name: Type check (mypy strict)
+        run: mypy medal_report.py analysis.py --strict
+
+      - name: Security scan (bandit)
+        run: bandit -r medal_report.py analysis.py -c pyproject.toml -q
+
+      - name: Run tests with coverage
+        run: pytest --cov=medal_report --cov-branch --cov-report=term-missing --cov-fail-under=95
+
+      - name: Verify tool contract
+        run: |
+          python medal_report.py olympic_medals.csv
+          test -f leaderboard.csv || (echo "ERROR: leaderboard.csv not created" && exit 1)
+          python -c "
+          import csv
+          with open('leaderboard.csv') as f:
+              r = csv.DictReader(f)
+              assert r.fieldnames == ['country_code', 'medals'], f'Bad columns: {r.fieldnames}'
+              rows = list(r)
+              assert len(rows) == 30, f'Expected 30 rows, got {len(rows)}'
+              assert rows[0]['country_code'] == 'USA'
+          print('Tool contract verified: leaderboard.csv is valid')
+          "
+
+      - name: Verify Phase 2 reproducibility
+        run: |
+          python analysis.py data/olympic_medals.csv | tee /tmp/analysis_output.txt
+          grep -q "r = 0.9505" /tmp/analysis_output.txt || (echo "ERROR: r value mismatch" && exit 1)
+          grep -q "All Phase 2 numbers reproduced" /tmp/analysis_output.txt
+          echo "Phase 2 numbers verified"
+
+      - name: Validate harness configs
+        run: |
+          python -c "
+          import json
+
+          c = json.load(open('agent_config.json'))
+          assert c['type'] == 'python'
+          assert '{input}' in c['run_command']
+          assert c['entry'] == 'medal_report.py'
+          print('agent_config.json: valid')
+
+          o = json.load(open('olympics.json'))
+          assert o['challenge_id'] == 'ignition-turnaround-podium'
+          assert o['outputs']['primary']['columns'] == ['country_code', 'medals']
+          print('olympics.json: valid')
+          "
