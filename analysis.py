@@ -117,6 +117,35 @@ def main() -> None:
     top8_match = list(board_by_total.head(8).index) == list(board_by_points.head(8).index)
     print(f"  Top-8 identical under both metrics: {top8_match}")
 
+    # ─── Stress test 4: Verify max inflation and order-of-operations count ───
+    print("\nStress test 4 — Key summary figures:")
+    inflation = (naive_counts / board["total"]).dropna()
+    print(f"  Max inflation ratio: {inflation.max():.4f}x ({inflation.idxmax()})")
+
+    # 297 phantom medals: deduping on raw medal text before normalization
+    # treats 'Gold' and 'GOLD ' as distinct keys, overcounting vs normalizing first.
+    df_raw_copy = pd.read_csv(path)
+    df_raw_copy["medal_clean"] = df_raw_copy["medal"].apply(
+        lambda m: {
+            "gold": "Gold",
+            "g": "Gold",
+            "1st": "Gold",
+            "silver": "Silver",
+            "s": "Silver",
+            "2nd": "Silver",
+            "bronze": "Bronze",
+            "b": "Bronze",
+            "3rd": "Bronze",
+        }.get(str(m).strip().lower())
+    )
+    df_raw_copy = df_raw_copy[df_raw_copy["medal_clean"].notna()]
+    raw_dedup = len(df_raw_copy.drop_duplicates(subset=["year", "event", "country_code", "medal"]))
+    norm_dedup = len(
+        df_raw_copy.drop_duplicates(subset=["year", "event", "country_code", "medal_clean"])
+    )
+    diff = raw_dedup - norm_dedup
+    print(f"  Normalize-before-dedupe saves: {diff} rows vs raw-text dedup")
+
     print("\n" + "=" * 60)
     print("All Phase 2 numbers reproduced successfully.")
     print("=" * 60)
