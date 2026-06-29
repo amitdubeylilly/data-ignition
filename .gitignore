@@ -45,3 +45,6 @@ leaderboard.csv
 
 # Challenge instructions (not part of submission)
 challenge.md
+
+# Chat export (uploaded separately via submission form)
+claude_chat_export.md
