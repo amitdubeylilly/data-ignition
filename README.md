@@ -48,21 +48,24 @@ The tool applies the following corrections in order:
 ## Development
 
 ```bash
-# Install dev dependencies
-pip install -r requirements-dev.txt
+# Install all dependencies (runtime + dev)
+pip install -r requirements.txt
 
 # Run tests with coverage
 pytest
 
 # Lint (scoped to corrected code; data/medal_report_original.py is the broken reference)
-ruff check medal_report.py tests/
-ruff format --check medal_report.py tests/
+ruff check medal_report.py analysis.py tests/
+ruff format --check medal_report.py analysis.py tests/
 
 # Type check
-mypy medal_report.py --strict
+mypy medal_report.py analysis.py --strict
 
 # Security scan
-bandit -r medal_report.py -c pyproject.toml
+bandit -r medal_report.py analysis.py -c pyproject.toml
+
+# Reproduce Phase 2 insight numbers
+python analysis.py data/olympic_medals.csv
 ```
 
 ## Project Structure
@@ -90,7 +93,7 @@ bandit -r medal_report.py -c pyproject.toml
 │   ├── test_reconciliation.py # Stats output
 │   └── test_integration.py    # End-to-end & CLI tests
 ├── pyproject.toml             # Project config (ruff, mypy, pytest, bandit)
-├── requirements-dev.txt       # Development dependencies
+├── .github/workflows/ci.yml  # CI pipeline (tests, lint, type-check)
 └── README.md
 ```
 

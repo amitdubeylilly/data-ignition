@@ -1,2 +1,11 @@
+# Runtime
 pandas==2.2.2
 matplotlib==3.9.0
+
+# Development & Testing
+pytest==8.3.5
+pytest-cov==6.1.1
+ruff==0.11.12
+bandit==1.9.0
+mypy==1.16.0
+pandas-stubs==2.2.3.241126

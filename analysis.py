@@ -45,9 +45,7 @@ def main() -> None:
     # ─── Inflation ratio: naive row count / corrected event count ─────────
     inflation = (naive_counts / board["total"]).dropna()
 
-    correlation_data = pd.DataFrame(
-        {"team_pct": team_pct, "inflation_ratio": inflation}
-    ).dropna()
+    correlation_data = pd.DataFrame({"team_pct": team_pct, "inflation_ratio": inflation}).dropna()
     corr = correlation_data["team_pct"].corr(correlation_data["inflation_ratio"])
 
     print("\n" + "=" * 60)
@@ -85,9 +83,11 @@ def main() -> None:
         sub_event, _ = dedupe_to_event_medals(subset, dict(stats))
         board_sub = compute_leaderboard(sub_event)
 
-        naive_sub = subset[subset["medal"].isin(["Gold", "Silver", "Bronze"])].groupby(
-            "country_code"
-        ).size()
+        naive_sub = (
+            subset[subset["medal"].isin(["Gold", "Silver", "Bronze"])]
+            .groupby("country_code")
+            .size()
+        )
         inflation_sub = (naive_sub / board_sub["total"]).dropna()
 
         cd = pd.DataFrame({"team_pct": tp, "inflation": inflation_sub}).dropna()

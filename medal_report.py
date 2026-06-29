@@ -203,7 +203,7 @@ def compute_leaderboard(df: pd.DataFrame) -> pd.DataFrame:
     board["points"] = board["gold"] * 3 + board["silver"] * 2 + board["bronze"] * 1
     board = board.sort_values(["total", "gold"], ascending=[False, False])
 
-    return board  # type: ignore[no-any-return]
+    return board
 
 
 def make_chart(board: pd.DataFrame, outfile: str = "leaderboard.png") -> str:

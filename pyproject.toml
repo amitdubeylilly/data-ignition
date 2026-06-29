@@ -2,24 +2,24 @@
 name = "medal-report"
 version = "1.0.0"
 description = "Olympic Medal Leaderboard Reporter — corrected analytics tool"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
-    "pandas>=2.0",
-    "matplotlib>=3.7",
+    "pandas==2.2.2",
+    "matplotlib==3.9.0",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=7.0",
-    "pytest-cov>=4.0",
-    "ruff>=0.4",
-    "bandit>=1.7",
-    "mypy>=1.5",
-    "pandas-stubs>=2.0",
+    "pytest==8.3.5",
+    "pytest-cov==6.1.1",
+    "ruff==0.11.12",
+    "bandit==1.9.0",
+    "mypy==1.16.0",
+    "pandas-stubs==2.2.3.241126",
 ]
 
 [tool.ruff]
-target-version = "py310"
+target-version = "py311"
 line-length = 100
 
 [tool.ruff.lint]
@@ -47,7 +47,7 @@ ignore = [
 "tests/*" = ["S101", "S311"]
 
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.11"
 strict = true
 warn_return_any = true
 warn_unused_configs = true
