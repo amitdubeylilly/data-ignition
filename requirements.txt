@@ -6,6 +6,6 @@ matplotlib==3.9.0
 pytest==8.3.5
 pytest-cov==6.1.1
 ruff==0.11.12
-bandit==1.9.0
+bandit==1.9.4
 mypy==1.16.0
 pandas-stubs==2.2.3.241126
