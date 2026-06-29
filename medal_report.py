@@ -26,7 +26,6 @@ matplotlib.use("Agg")
 # ─── Configuration ────────────────────────────────────────────────────────────
 TOP_N = 10
 MEDAL_RANK = {"Gold": 1, "Silver": 2, "Bronze": 3}
-MEDAL_POINTS = {"Gold": 3, "Silver": 2, "Bronze": 1}
 
 
 # ─── Medal Normalization Map ──────────────────────────────────────────────────
@@ -76,6 +75,37 @@ def load_data(path: str | Path) -> pd.DataFrame:
     return df
 
 
+def recover_country_codes(df: pd.DataFrame) -> tuple[pd.DataFrame, int]:
+    """
+    Recover missing country_code values from country_name where possible.
+
+    Some rows have a valid country_name but a null country_code due to a data
+    quality issue. Without recovery, groupby silently drops these rows from the
+    leaderboard while they are still counted in the reconciliation total —
+    causing the two numbers to diverge.
+
+    Returns:
+        Tuple of (DataFrame with codes recovered, count of rows recovered)
+    """
+    null_mask = df["country_code"].isna() & df["country_name"].notna()
+    if not null_mask.any():
+        return df, 0
+
+    # Build name→code map from rows that have both fields populated
+    name_to_code = (
+        df[df["country_code"].notna()].groupby("country_name")["country_code"].first().to_dict()
+    )
+
+    df = df.copy()
+    recovered = df.loc[null_mask, "country_name"].map(name_to_code)
+    df.loc[null_mask, "country_code"] = recovered
+
+    # Count how many were successfully recovered vs still null
+    still_null = df["country_code"].isna().sum()
+    recovered_count = int(null_mask.sum()) - still_null
+    return df, recovered_count
+
+
 def clean_medals(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, int]]:
     """
     Normalize medal text and report what was cleaned.
@@ -85,7 +115,13 @@ def clean_medals(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, int]]:
     """
     stats: dict[str, int] = {"raw_rows": len(df)}
 
-    # Step 1: Normalize medal values
+    # Step 1: Recover missing country codes from country_name
+    df, recovered = recover_country_codes(df)
+    stats["country_codes_recovered"] = recovered
+    if recovered > 0:
+        print(f"Recovered {recovered} missing country_code values from country_name")
+
+    # Step 2: Normalize medal values
     df = df.copy()
     df["medal_clean"] = df["medal"].apply(normalize_medal)
 
@@ -98,7 +134,7 @@ def clean_medals(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, int]]:
     df = df[df["medal_clean"].notna()].copy()
     stats["after_normalization"] = len(df)
 
-    # Step 2: Remove exact duplicate rows
+    # Step 3: Remove exact duplicate rows
     before_dedup = len(df)
     df = df.drop_duplicates()
     exact_dupes = before_dedup - len(df)
@@ -106,6 +142,14 @@ def clean_medals(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, int]]:
     stats["after_exact_dedup"] = len(df)
     if exact_dupes > 0:
         print(f"Removed {exact_dupes} exact duplicate rows")
+
+    # Step 4: Drop any remaining rows with null country_code (unrecoverable)
+    still_null = df["country_code"].isna().sum()
+    stats["unrecoverable_null_country"] = int(still_null)
+    if still_null > 0:
+        print(f"WARNING: {still_null} rows with unrecoverable null country_code dropped")
+        df = df[df["country_code"].notna()].copy()
+    stats["after_null_country_drop"] = len(df)
 
     return df, stats
 
@@ -139,7 +183,6 @@ def dedupe_to_event_medals(
     stats["individual_event_rows"] = len(indiv_df)
 
     # ─── Team events: one medal per country per event ─────────────────────
-    # Detect conflicts (same country, same event, different medals)
     team_key = ["year", "sport", "event", "country_code"]
     team_conflicts = team_df.groupby(team_key)["medal_clean"].nunique()
     conflict_count = int((team_conflicts > 1).sum())
@@ -184,10 +227,8 @@ def compute_leaderboard(df: pd.DataFrame) -> pd.DataFrame:
     Returns DataFrame with columns: gold, silver, bronze, total, points
     sorted by total descending, then by gold descending.
     """
-    # Pivot medal types into columns
     medal_counts = df.groupby(["country_code", "medal_clean"]).size().unstack(fill_value=0)
 
-    # Ensure all medal columns exist
     for medal in ["Gold", "Silver", "Bronze"]:
         if medal not in medal_counts.columns:
             medal_counts[medal] = 0
@@ -223,7 +264,7 @@ def make_chart(board: pd.DataFrame, outfile: str = "leaderboard.png") -> str:
     ax.set_title(f"Top {TOP_N} Nations by Total Event Medals (1960-2016)")
     ax.set_xticks(x)
     ax.set_xticklabels(top.index, rotation=45, ha="right")
-    ax.set_ylim(0, None)  # Honest baseline at zero
+    ax.set_ylim(0, None)
     ax.legend()
     plt.tight_layout()
     plt.savefig(outfile, dpi=150)
@@ -236,10 +277,12 @@ def print_reconciliation(stats: dict[str, int]) -> None:
     """Print a reconciliation table showing row counts at each pipeline stage."""
     print("\n=== DATA RECONCILIATION ===")
     print(f"  Raw rows loaded:                  {stats['raw_rows']:>7,}")
+    print(f"  Country codes recovered:          {stats['country_codes_recovered']:>7,}")
     print(f"  Unrecognized medal values:        {stats['unrecognized_medals']:>7,}")
     print(f"  After medal normalization:        {stats['after_normalization']:>7,}")
     print(f"  Exact duplicates removed:         {stats['exact_duplicates_removed']:>7,}")
-    print(f"  After exact dedup:                {stats['after_exact_dedup']:>7,}")
+    print(f"  Unrecoverable null country:       {stats['unrecoverable_null_country']:>7,}")
+    print(f"  After exact dedup + null drop:    {stats['after_null_country_drop']:>7,}")
     print(f"  ├─ Team event rows:               {stats['team_event_rows']:>7,}")
     print(f"  │  Team medal conflicts resolved: {stats['team_medal_conflicts']:>7,}")
     print(f"  │  Final team medals:             {stats['team_medals']:>7,}")

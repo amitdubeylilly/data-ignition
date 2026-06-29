@@ -167,9 +167,12 @@ class TestEndToEndPipeline:
 
         # Sanity checks on real data
         assert stats["raw_rows"] == 19326
-        assert stats["exact_duplicates_removed"] == 165
+        assert stats["country_codes_recovered"] == 40
+        assert stats["exact_duplicates_removed"] == 166
         assert stats["unrecognized_medals"] == 0
-        assert stats["final_event_medals"] > 5000
-        assert stats["final_event_medals"] < 15000
-        assert board.index[0] == "USA"  # USA should be #1
-        assert board.loc["USA", "total"] > 500
+        assert stats["unrecoverable_null_country"] == 0
+        assert stats["final_event_medals"] == 8695
+        # Reconciliation must tie: leaderboard sum == final_event_medals
+        assert board["total"].sum() == stats["final_event_medals"]
+        assert board.index[0] == "USA"
+        assert board.loc["USA", "total"] == 962
