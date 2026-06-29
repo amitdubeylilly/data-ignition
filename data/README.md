@@ -1,19 +1,12 @@
-# medal_report.py
+# Original Data Files
 
-A reporting tool for the Olympic medals dataset.
-
-## What it does
-
-Reads the medals CSV and produces:
-- A country medal leaderboard (printed to console)
-
-## Usage
-
-```bash
-python medal_report.py data/olympic_medals.csv
-```
+This directory contains the original challenge files as provided.
 
 ## Data files
 
-- `data/olympic_medals.csv` — medal records, one row per athlete per event
-- `data/population_reference.csv` — country populations (millions) - This is an optional dataset. If you find it useful, feel free to use.
+- `olympic_medals.csv` — medal records, one row per athlete per event
+- `population_reference.csv` — country populations (millions)
+
+## Original script
+
+- `medal_report_original.py` — the original (broken) `medal_report.py` as shipped by the "teammate". This file is kept for reference to show what was wrong. The corrected version is at the repository root.

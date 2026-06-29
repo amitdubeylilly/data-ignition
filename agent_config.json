@@ -1,0 +1,8 @@
+{
+    "type": "python",
+    "runtime_version": "3.11",
+    "entry": "medal_report.py",
+    "run_command": "python medal_report.py {input}",
+    "requirements": "requirements.txt",
+    "timeout_seconds": 120
+}
